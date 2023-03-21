@@ -1,3 +1,4 @@
+from typing import Dict
 from urllib import parse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -28,7 +29,7 @@ class NaverStoreInfoScrapper:
     def close(self):
         self.driver.close()
 
-    def init_naver(
+    def _init_naver(
         self,
         orig_query: str,
         paging_index: int,
@@ -38,9 +39,9 @@ class NaverStoreInfoScrapper:
         self.driver.get(_url)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-    def get_infos(
+    def _get_infos(
         self,
-    ):
+    ) -> Dict[str, str]:
         malls = self.driver.find_elements(
             by=By.XPATH, value=NaverStoreInfoXpath.BASICLIST_MALL_AREA
         )
@@ -61,3 +62,17 @@ class NaverStoreInfoScrapper:
                 }
             )
         return smart_store_info
+
+    def get_infos(
+        self,
+        orig_query: str,
+        paging_index_limit: int,
+    ) -> Dict[str, str]:
+        _store_infos = []
+        for paging_index in range(1, paging_index_limit + 1):
+            self._init_naver(orig_query=orig_query, paging_index=paging_index)
+            _store_infos_paging_index = self._get_infos()
+            _store_infos = _store_infos + _store_infos_paging_index
+        
+        _deduplicated_store_infos = [dict(_store_info_tuple) for _store_info_tuple in {tuple(_store_info.items()) for _store_info in _store_infos}]
+        return _deduplicated_store_infos
