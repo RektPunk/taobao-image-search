@@ -73,6 +73,11 @@ class NaverStoreInfoScrapper:
             self._init_naver(orig_query=orig_query, paging_index=paging_index)
             _store_infos_paging_index = self._get_infos()
             _store_infos = _store_infos + _store_infos_paging_index
-        
-        _deduplicated_store_infos = [dict(_store_info_tuple) for _store_info_tuple in {tuple(_store_info.items()) for _store_info in _store_infos}]
+
+        _deduplicated_store_infos = [
+            dict(_store_info_tuple)
+            for _store_info_tuple in {
+                tuple(_store_info.items()) for _store_info in _store_infos
+            }
+        ]
         return _deduplicated_store_infos
