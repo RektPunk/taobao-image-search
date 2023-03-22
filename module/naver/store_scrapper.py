@@ -46,20 +46,30 @@ class NaverStoreInfoScrapper:
         malls = self.driver.find_elements(
             by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_AREA
         )
+        product_infos = self.driver.find_elements(
+            by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_INFO_AREA
+        )
         smart_store_info = []
-        for mall in malls:
+        for mall, product_info in zip(malls, product_infos):
             _mall_grade = mall.find_element(
                 by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_GRADE
             ).text
+
             if _mall_grade != "":
                 continue
+
             _title_link = mall.find_element(
                 by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_TITLE
+            ).find_element(by=By.CSS_SELECTOR, value="a")
+
+            _product_link = product_info.find_element(
+                by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_INFO_TITLE
             ).find_element(by=By.CSS_SELECTOR, value="a")
             smart_store_info.append(
                 {
                     "SmartStoreLink": _title_link.get_attribute("href"),
                     "SmartStoreTitle": _title_link.text,
+                    "ProductLink": _product_link.get_attribute("href"),
                 }
             )
         return smart_store_info
@@ -84,30 +94,45 @@ class NaverStoreInfoScrapper:
         self._store_infos = _deduplicated_store_infos
         return _deduplicated_store_infos
 
+    def _get_best_products_link(
+        self,
+        _smart_store_link: str,
+        wait_int: int = 1,
+    ):
+        self.driver.implicitly_wait(wait_int)
+        self.driver.get(_smart_store_link)
+        elements_role_presentation = self.driver.find_elements(
+            by=By.CSS_SELECTOR, value=NaverBestProductVariables.LI_ROLE_PRESENTATION
+        )
+        product_links = []
+        for element in elements_role_presentation:
+            if "찜하기" not in element.text:
+                pass
+            if "상세정보" in element.text:
+                break
+            product_link = element.find_element(
+                by=By.CSS_SELECTOR,
+                value=NaverBestProductVariables.A_CLASS_LINKANCHOR,
+            ).get_attribute("href")
+            product_links.append(product_link)
+        return product_links
+
     def get_best_products(
         self,
         wait_int: int = 1,
     ) -> pd.DataFrame:
         best_products_with_store_info = []
         for store_info in self._store_infos:
-            _smart_store_link = store_info["SmartStoreLink"]
-            self.driver.implicitly_wait(wait_int)
-            self.driver.get(_smart_store_link)
-            best_products_widget = self.driver.find_element(
-                by=By.ID, value=NaverBestProductVariables.PC_BEST_PRODUCT_WIDGET
-            )
-            if best_products_widget.text == "":
+            _smart_store_link = store_info["ProductLink"]
+            try:
+                _best_products = self._get_best_products_link(
+                    _smart_store_link=_smart_store_link, wait_int=wait_int
+                )
+            except:
                 continue
-            best_products = best_products_widget.find_elements(
-                by=By.CSS_SELECTOR, value=NaverBestProductVariables.LI
-            )
-            best_product_link = [
-                best_product.find_element(
-                    by=By.CSS_SELECTOR, value=NaverBestProductVariables.A
-                ).get_attribute("href")
-                for best_product in best_products
-            ]
-            store_info.update({"BestProducts": best_product_link})
+            if len(_best_products) == 0:
+                continue
+            store_info.update({"BestProducts": _best_products})
             best_products_with_store_info.append(store_info)
 
         best_products_df = pd.DataFrame(best_products_with_store_info).explode(
