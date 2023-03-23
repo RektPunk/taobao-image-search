@@ -121,6 +121,11 @@ class NaverStoreInfoScrapper:
         self,
         wait_int: int = 1,
     ) -> pd.DataFrame:
+        KEY_COLS = [
+            "SmartStoreTitle",
+            "SmartStoreLink",
+            "BestProducts",
+        ]
         best_products_with_store_info = []
         for store_info in self._store_infos:
             _smart_store_link = store_info["ProductLink"]
@@ -138,5 +143,6 @@ class NaverStoreInfoScrapper:
         best_products_df = pd.DataFrame(best_products_with_store_info).explode(
             "BestProducts"
         )
+        best_products_df = best_products_df[KEY_COLS].drop_duplicates()
         self.best_products_df = best_products_df
         return best_products_df
