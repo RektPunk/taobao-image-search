@@ -11,7 +11,7 @@ if __name__ == "__main__":
     naver_store_info_scrapper = NaverStoreInfoScrapper()
     store_info_dict = naver_store_info_scrapper.get_store_infos(
         orig_query=args.query,
-        paging_index_limit=args.page_limit,
+        paging_index_limit=int(args.page_limit),
     )
     naver_store_info_scrapper.get_best_products()
     best_products_df = naver_store_info_scrapper.get_best_products_details()
