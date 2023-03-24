@@ -154,7 +154,8 @@ class NaverStoreInfoScrapper:
         self,
     ) -> pd.DataFrame:
         _now = datetime.now().strftime("%Y-%m-%d:%H:%M:%S")
-        os.makedirs(f"images/{_now}", exist_ok=True)
+        image_folder_path = os.path.join("images", f"{_now}")
+        os.makedirs(image_folder_path, exist_ok=True)
         best_product_details = []
         for _row_index, best_product in self.best_products_df.iterrows():
             _smart_store_title = best_product["smart_store_title"]
@@ -211,8 +212,9 @@ class NaverStoreInfoScrapper:
             )
             image_url = image_element.get_attribute("src")
             img_data = requests.get(image_url).content
-            image_path = (
-                f"images/{_now}/{_row_index}_{_smart_store_title}-{product_title}.png"
+            image_path = os.path.join(
+                image_folder_path,
+                f"{_row_index}_{_smart_store_title}-{product_title}.png",
             )
             with open(image_path, "wb") as handler:
                 handler.write(img_data)
@@ -231,5 +233,6 @@ class NaverStoreInfoScrapper:
             best_product_details.append(best_product_detail)
 
         best_product_details_df = pd.DataFrame(best_product_details)
-        best_product_details_df.to_csv(f"files/{_now}.csv", index=False)
+        csv_path = os.path.join("files", f"{_now}.csv")
+        best_product_details_df.to_csv(csv_path, index=False)
         return best_product_details_df
