@@ -153,7 +153,7 @@ class NaverStoreInfoScrapper:
     def get_best_products_details(
         self,
     ) -> pd.DataFrame:
-        _now = datetime.now().strftime("%Y-%m-%d:%H:%M:%S")
+        _now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         image_folder_path = os.path.join("images", f"{_now}")
         os.makedirs(image_folder_path, exist_ok=True)
         best_product_details = []
