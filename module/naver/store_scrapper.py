@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Dict, List
 from datetime import datetime
 import requests
 from urllib import parse
@@ -7,19 +7,17 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import pandas as pd
 from module.naver.variables import (
+    NaverStoreInfoUrl,
     NaverStoreInfoVariables,
     NaverBestProductVariables,
     NaverBestProductDetailVariables,
+    NaverCategoryInfoVariables,
 )
-
-
-class _NaverStoreInfoUrl:
-    NAVER_STORE_INFO_URL: str = "https://search.shopping.naver.com/search/all?agency=true&frm=NVSHCHK&origQuery={orig_query}&pagingIndex={paging_index}&pagingSize=20&productSet=checkout&query={orig_query}&sort=rel&timestamp=&viewType=list"
 
 
 def _generate_url(orig_query: str, paging_index: int) -> str:
     encoded_orig_query = parse.quote(orig_query)
-    return _NaverStoreInfoUrl.NAVER_STORE_INFO_URL.format(
+    return NaverStoreInfoUrl.NAVER_STORE_INFO_URL.format(
         orig_query=encoded_orig_query,
         paging_index=paging_index,
     )
@@ -28,14 +26,11 @@ def _generate_url(orig_query: str, paging_index: int) -> str:
 class NaverStoreInfoScrapper:
     def __init__(self, wait_int: int = 5):
         self.driver = webdriver.Chrome("../driver/chromedriver")
-        self.wait_int = wait_int
+        self.wait_int: int = wait_int
         self.driver.implicitly_wait(self.wait_int)
-
-    def __call__(self):
-        return self.driver
-
-    def close(self):
-        self.driver.close()
+        self._now: str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.store_infos: List = []
+        self.best_product_details: List = []
 
     def _get_page(
         self,
@@ -84,20 +79,23 @@ class NaverStoreInfoScrapper:
         orig_query: str,
         paging_index_limit: int,
     ) -> Dict[str, str]:
+        self.orig_query = orig_query
         _store_infos = []
         for paging_index in range(1, paging_index_limit + 1):
             _url = _generate_url(orig_query=orig_query, paging_index=paging_index)
             self._get_page(_url)
             _store_infos_paging_index = self._get_store_infos_for_each_page()
             _store_infos = _store_infos + _store_infos_paging_index
+
+        _deduplicated_store_infos_target = self.store_infos + _store_infos
         _deduplicated_store_infos = [
             dict(_store_info_tuple)
             for _store_info_tuple in {
-                tuple(_store_info.items()) for _store_info in _store_infos
+                tuple(_store_info.items())
+                for _store_info in _deduplicated_store_infos_target
             }
         ]
-        self._store_infos = _deduplicated_store_infos
-        return _deduplicated_store_infos
+        self.store_infos = _deduplicated_store_infos
 
     def _get_best_products_link(
         self,
@@ -129,7 +127,7 @@ class NaverStoreInfoScrapper:
             "best_product_link",
         ]
         best_products_with_store_info = []
-        for store_info in self._store_infos:
+        for store_info in self.store_infos:
             _smart_store_link = store_info["product_link"]
             try:
                 _best_products = self._get_best_products_link(
@@ -142,97 +140,135 @@ class NaverStoreInfoScrapper:
             store_info.update({"best_product_link": _best_products})
             best_products_with_store_info.append(store_info)
 
-        best_products_df = pd.DataFrame(best_products_with_store_info).explode(
-            "best_product_link"
-        )
-        best_products_df = (
-            best_products_df[_key_cols].drop_duplicates().reset_index(drop=True)
-        )
-        self.best_products_df = best_products_df
+        if len(best_products_with_store_info) != 0:
+            best_products_df = pd.DataFrame(best_products_with_store_info).explode(
+                "best_product_link"
+            )
+            best_products_df = (
+                best_products_df[_key_cols].drop_duplicates().reset_index(drop=True)
+            )
+            self.best_products_df = best_products_df
+        else:
+            self.best_products_df = None
 
     def get_best_products_details(
         self,
-    ) -> pd.DataFrame:
-        _now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        image_folder_path = os.path.join("images", f"{_now}")
+    ):
+        image_folder_path = os.path.join("images", f"{self._now}")
         os.makedirs(image_folder_path, exist_ok=True)
-        best_product_details = []
+        if self.best_products_df is None:
+            return
         for _row_index, best_product in self.best_products_df.iterrows():
-            _smart_store_title = best_product["smart_store_title"]
-            _smart_store_link = best_product["smart_store_link"]
-            _best_product_link = best_product["best_product_link"]
-            self._get_page(
-                _best_product_link,
-            )
-            category_names = self.driver.find_elements(
-                by=By.CLASS_NAME, value=NaverBestProductDetailVariables.CATEGORY
-            )
-            category_names = "|".join(
-                [category_name.text for category_name in category_names]
-            )
-            product_title = self.driver.find_element(
-                by=By.CLASS_NAME, value=NaverBestProductDetailVariables.PRODUCT_TITLE
-            ).text
-            product_price_element = self.driver.find_element(
-                by=By.CLASS_NAME,
-                value=NaverBestProductDetailVariables.PRODUCT_PRICE_ELEMENT,
-            )
-            product_price = product_price_element.find_element(
-                by=By.CLASS_NAME,
-                value=NaverBestProductDetailVariables.PRODUCT_PRICE,
-            ).text.replace(",", "")
-            product_price = int(product_price)
-            product_shipping_price_elements = self.driver.find_elements(
-                by=By.CLASS_NAME,
-                value=NaverBestProductDetailVariables.PRODUCT_SHIPPING_PRICE_ELEMENT,
-            )
-            if "무료배송" in [
-                product_shipping_price_element.text
-                for product_shipping_price_element in product_shipping_price_elements
-            ]:
-                product_shipping_price = 0
-            else:
+            try:
+                _smart_store_title = best_product["smart_store_title"]
+                _smart_store_link = best_product["smart_store_link"]
+                _best_product_link = best_product["best_product_link"]
+                self._get_page(
+                    _best_product_link,
+                )
+                product_title = self.driver.find_element(
+                    by=By.CLASS_NAME,
+                    value=NaverBestProductDetailVariables.PRODUCT_TITLE,
+                ).text
+                product_price_element = self.driver.find_element(
+                    by=By.CLASS_NAME,
+                    value=NaverBestProductDetailVariables.PRODUCT_PRICE_ELEMENT,
+                )
+                product_price = product_price_element.find_element(
+                    by=By.CLASS_NAME,
+                    value=NaverBestProductDetailVariables.PRODUCT_PRICE,
+                ).text.replace(",", "")
+                product_price = int(product_price)
                 product_shipping_price_elements = self.driver.find_elements(
                     by=By.CLASS_NAME,
-                    value=NaverBestProductDetailVariables.PRODUCT_SHIPPING_PRICE,
+                    value=NaverBestProductDetailVariables.PRODUCT_SHIPPING_PRICE_ELEMENT,
                 )
-                product_shipping_price = int(
-                    [_.text for _ in product_shipping_price_elements][0].replace(
-                        ",", ""
+                if "무료배송" in [
+                    product_shipping_price_element.text
+                    for product_shipping_price_element in product_shipping_price_elements
+                ]:
+                    product_shipping_price = 0
+                else:
+                    product_shipping_price_elements = self.driver.find_elements(
+                        by=By.CLASS_NAME,
+                        value=NaverBestProductDetailVariables.PRODUCT_SHIPPING_PRICE,
                     )
+                    product_shipping_price = int(
+                        [_.text for _ in product_shipping_price_elements][0].replace(
+                            ",", ""
+                        )
+                    )
+                product_total_price = product_price + product_shipping_price
+
+                tag_names = self.driver.find_elements(
+                    by=By.CLASS_NAME, value=NaverBestProductDetailVariables.TAG_NAME
+                )
+                tag_names = ",".join(
+                    [tag_name.text.replace("#", "") for tag_name in tag_names]
                 )
 
-            product_total_price = product_price + product_shipping_price
-            tag_names = self.driver.find_elements(
-                by=By.CLASS_NAME, value=NaverBestProductDetailVariables.TAG_NAME
-            )
-            tag_names = "|".join([tag_name.text for tag_name in tag_names])
-            image_element = self.driver.find_element(
-                by=By.CLASS_NAME, value=NaverBestProductDetailVariables.IMAGE_ELEMENT
-            )
-            image_url = image_element.get_attribute("src")
-            img_data = requests.get(image_url).content
-            image_path = os.path.join(
-                image_folder_path,
-                f"{_row_index}_{_smart_store_title}-{product_title}.png",
-            )
-            with open(image_path, "wb") as handler:
-                handler.write(img_data)
+                image_element = self.driver.find_element(
+                    by=By.CLASS_NAME,
+                    value=NaverBestProductDetailVariables.IMAGE_ELEMENT,
+                )
+                image_url = image_element.get_attribute("src")
+                img_data = requests.get(image_url).content
+                image_path = os.path.join(
+                    image_folder_path,
+                    f"{_row_index}_{_smart_store_title}_{product_title}.png",
+                )
+                with open(image_path, "wb") as handler:
+                    handler.write(img_data)
+                best_product_detail = {
+                    "smart_store_title": _smart_store_title,
+                    "smart_store_link": _smart_store_link,
+                    "best_product_link": _best_product_link,
+                    "product_title": product_title,
+                    "product_price": product_price,
+                    "product_total_price": product_total_price,
+                    "tag_names": tag_names,
+                    "image_path": image_path,
+                    "image_path": image_path,
+                }
+                self.best_product_details.append(best_product_detail)
+            except:
+                print(_best_product_link)
+                continue
 
-            best_product_detail = {
-                "smart_store_title": _smart_store_title,
-                "smart_store_link": _smart_store_link,
-                "best_product_link": _best_product_link,
-                "category_names": category_names,
-                "product_title": product_title,
-                "product_price": product_price,
-                "product_total_price": product_total_price,
-                "tag_names": tag_names,
-                "image_path": image_path,
-            }
-            best_product_details.append(best_product_detail)
+    def get_category_name(
+        self,
+    ):
+        for best_product_detail in self.best_product_details:
+            _smart_store_title = best_product_detail["product_title"]
+            _url = _generate_url(orig_query=_smart_store_title, paging_index=1)
+            self._get_page(_url)
+            try:
+                category_names = " > ".join(
+                    [
+                        category_name.text
+                        for category_name in self.driver.find_element(
+                            by=By.CLASS_NAME,
+                            value=NaverCategoryInfoVariables.BASICLIST_DEPTH,
+                        ).find_elements(
+                            by=By.CLASS_NAME, value=NaverCategoryInfoVariables.SPAN
+                        )
+                    ]
+                )
+            except:
+                category_names = ""
+            finally:
+                best_product_detail.update(
+                    {
+                        "category_names": category_names,
+                    }
+                )
 
-        best_product_details_df = pd.DataFrame(best_product_details)
-        csv_path = os.path.join("files", f"{_now}.csv")
-        best_product_details_df.to_csv(csv_path, index=False)
-        return best_product_details_df
+    def save_files(
+        self,
+    ):
+        best_product_details_df = pd.DataFrame(self.best_product_details)
+        tsv_path = os.path.join("files", f"{self._now}.tsv")
+        best_product_details_df.to_csv(tsv_path, sep="\t", index=False)
+
+    def close(self):
+        self.driver.close()

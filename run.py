@@ -1,18 +1,25 @@
-import argparse
+import yaml
 from module.naver.store_scrapper import NaverStoreInfoScrapper
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--query", help="Input query")
-    parser.add_argument("--page-limit", default=1, help="Set page limit")
-    args = parser.parse_args()
-    assert args.query is not None, "query is None."
+    with open("input_querys.yaml", "r") as input_querys_yaml:
+        input_querys = yaml.load(input_querys_yaml, Loader=yaml.FullLoader)
+
     naver_store_info_scrapper = NaverStoreInfoScrapper()
-    store_info_dict = naver_store_info_scrapper.get_store_infos(
-        orig_query=args.query,
-        paging_index_limit=int(args.page_limit),
-    )
+    for input_query in input_querys:
+        _query = input_query.get("query")
+        _page_limit = input_query.get("page_limit")
+        if _page_limit is None:
+            _page_limit = 3  ## Default
+
+        naver_store_info_scrapper.get_store_infos(
+            orig_query=_query,
+            paging_index_limit=int(_page_limit),
+        )
+
     naver_store_info_scrapper.get_best_products()
-    best_products_df = naver_store_info_scrapper.get_best_products_details()
+    naver_store_info_scrapper.get_best_products_details()
+    naver_store_info_scrapper.get_category_name()
+    naver_store_info_scrapper.save_files()
     naver_store_info_scrapper.close()
