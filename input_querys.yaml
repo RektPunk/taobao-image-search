@@ -1,6 +1,6 @@
 - query: "접이식 의자"
-  page_limit: 1
+  page_limit: 3
 - query: "바텐더 의자"
-  page_limit: 1
+  page_limit: 3
 - query: "접이식 테이블"
-  page_limit: 1
+  page_limit: 3
