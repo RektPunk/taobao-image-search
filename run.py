@@ -3,7 +3,7 @@ from module.naver.store_scrapper import NaverStoreInfoScrapper
 
 
 if __name__ == "__main__":
-    with open("input_querys.yaml", "r") as input_querys_yaml:
+    with open("input_querys.yaml", "r", encoding="utf-8") as input_querys_yaml:
         input_querys = yaml.load(input_querys_yaml, Loader=yaml.FullLoader)
 
     naver_store_info_scrapper = NaverStoreInfoScrapper()
