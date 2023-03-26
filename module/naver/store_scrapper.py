@@ -125,6 +125,8 @@ class NaverStoreInfoScrapper:
         self,
     ):
         _key_cols = [
+            "smart_store_title",
+            "smart_store_link",
             "best_product_link",
         ]
         best_products_with_store_info = []
@@ -146,7 +148,9 @@ class NaverStoreInfoScrapper:
                 "best_product_link"
             )
             best_products_df = (
-                best_products_df[_key_cols].drop_duplicates().reset_index(drop=True)
+                best_products_df[_key_cols]
+                .drop_duplicates("best_product_link")
+                .reset_index(drop=True)
             )
             self.best_products_df = best_products_df
         else:
