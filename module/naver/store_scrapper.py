@@ -1,4 +1,5 @@
 import os
+from time import sleep
 from typing import Dict, List
 from datetime import datetime
 import requests
@@ -38,6 +39,7 @@ class NaverStoreInfoScrapper:
     ):
         self.driver.get(url)
         self.driver.implicitly_wait(self.wait_int)
+        sleep(self.wait_int)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     def _get_store_infos_for_each_page(
