@@ -125,8 +125,6 @@ class NaverStoreInfoScrapper:
         self,
     ):
         _key_cols = [
-            "smart_store_title",
-            "smart_store_link",
             "best_product_link",
         ]
         best_products_with_store_info = []
