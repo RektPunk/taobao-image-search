@@ -25,10 +25,11 @@ def _generate_url(orig_query: str, paging_index: int) -> str:
 
 
 class NaverStoreInfoScrapper:
-    def __init__(self, wait_int: int = 5):
+    def __init__(self, wait_int: int, implicitly_wait_int: int = 5):
         self.driver = webdriver.Chrome("../driver/chromedriver")
         self.wait_int: int = wait_int
-        self.driver.implicitly_wait(self.wait_int)
+        self.implicitly_wait_int: int = implicitly_wait_int
+        self.driver.implicitly_wait(self.implicitly_wait_int)
         self._now: str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.store_infos: List = []
         self.best_product_details: List = []
@@ -38,8 +39,8 @@ class NaverStoreInfoScrapper:
         url: str,
     ):
         self.driver.get(url)
-        self.driver.implicitly_wait(self.wait_int)
         sleep(self.wait_int)
+        self.driver.implicitly_wait(self.implicitly_wait_int)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     def _get_store_infos_for_each_page(
