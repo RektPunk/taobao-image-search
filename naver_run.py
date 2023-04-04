@@ -1,7 +1,6 @@
 import yaml
 import argparse
 from module.naver.store_scrapper import NaverStoreInfoScrapper
-from module.taobao.store_scrapper import TaoBaoInfoScrapper
 
 if __name__ == "__main__":
     ## Naver Store Info Scrapper
