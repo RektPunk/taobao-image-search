@@ -96,6 +96,18 @@ class TaoBaoInfoScrapper:
         return url_path
 
     def get_product_infos(self):
+        _col_name = [
+            "smart_store_title",
+            "smart_store_link",
+            "best_product_link",
+            "taobao_link",
+            "product_title",
+            "product_price",
+            "product_total_price",
+            "tag_names",
+            "image_path",
+            "category_names",
+        ]
         best_product_urls = []
         for _, row in self.product_df.iterrows():
             _image_path = row["image_path"]
@@ -107,8 +119,9 @@ class TaoBaoInfoScrapper:
             best_product_urls.append(best_product_url)
 
         self.product_df = self.product_df.assign(
-            taobao_url=best_product_urls,
+            taobao_link=best_product_urls,
         )
+        self.product_df = self.product_df[_col_name]
 
     def save_files(
         self,
