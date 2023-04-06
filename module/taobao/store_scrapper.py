@@ -56,6 +56,7 @@ class TaoBaoInfoScrapper:
             self.driver.switch_to.window(window_handle)
             if window_handle != _current_window_handle:
                 self.driver.close()
+        self.driver.switch_to.window(_current_window_handle)
 
     def _send_to_clipboard(self, clip_type, data):
         win32clipboard.OpenClipboard()
