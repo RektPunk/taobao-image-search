@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from time import sleep
 from io import BytesIO
+import logging
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -122,7 +123,8 @@ class TaoBaoInfoScrapper:
             self._copy_to_clipboard(_image_path)
             try:
                 best_product_url = self._search_taobao_images()
-            except:
+            except Exception as e:
+                logging.error(e)
                 best_product_url = ""
             best_product_urls.append(best_product_url)
             self._close_tab()
