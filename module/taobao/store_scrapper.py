@@ -37,7 +37,6 @@ class TaoBaoInfoScrapper:
         self.implicitly_wait_int: int = implicitly_wait_int
         self.driver.implicitly_wait(self.wait_int)
         self.product_df = _get_product_dfs()
-        self.image_count = 0
         self._now: str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     def _get_page(
@@ -48,6 +47,15 @@ class TaoBaoInfoScrapper:
         sleep(self.wait_int)
         self.driver.implicitly_wait(self.implicitly_wait_int)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    def _close_tab(
+        self,
+    ):
+        _current_window_handle = self.driver.current_window_handle
+        for window_handle in self.driver.window_handles:
+            self.driver.switch_to.window(window_handle)
+            if window_handle != _current_window_handle:
+                self.driver.close()
 
     def _send_to_clipboard(self, clip_type, data):
         win32clipboard.OpenClipboard()
@@ -117,6 +125,7 @@ class TaoBaoInfoScrapper:
             except:
                 best_product_url = ""
             best_product_urls.append(best_product_url)
+            self._close_tab()
 
         self.product_df = self.product_df.assign(
             taobao_link=best_product_urls,
