@@ -94,8 +94,7 @@ class TaoBaoInfoScrapper:
         submit_element.click()
 
         # 새창 핸들로 변경
-        self.image_count = self.image_count + 1
-        self.driver.switch_to.window(self.driver.window_handles[self.image_count])
+        self.driver.switch_to.window(self.driver.window_handles[-1])
 
         # XPath로 요소 찾기
         element = self.driver.find_element(
