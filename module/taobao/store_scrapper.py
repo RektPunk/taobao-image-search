@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime
 from time import sleep
 from io import BytesIO
 from selenium import webdriver
