@@ -9,8 +9,10 @@ pip install -r requirements.txt
 2. Change input querys in `input_querys.yaml`
 3. Run script
 ```python
-python run.py
-python run.py --wait-int 5 # wait 5 seconds for each page
+python naver_run.py
+python naver_run.py --wait-int 5 # wait 5 seconds for each page
+python taobao_run.py
+python taobao_run.py --wait-int 5
 ```
 
 ## Outputs
