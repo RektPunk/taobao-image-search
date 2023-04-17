@@ -10,7 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from PIL import Image
 import pandas as pd
 import win32clipboard
-from module.taobao.variables import TaoBaoInfoVariables
+from module.taobao.variables import TaoBaoInfoVariables, TaoBaoUrls
 
 
 def _get_product_dfs() -> pd.DataFrame:
@@ -77,7 +77,7 @@ class TaoBaoInfoScrapper:
         self,
     ) -> str:
         # WEB URL
-        self._get_page(TaoBaoInfoVariables.TAOBAO_URL)
+        self._get_page(TaoBaoUrls.TAOBAO_URL)
 
         # 파일 업로드를 위한 input 요소 클릭
         upload_element = self.driver.find_element(
