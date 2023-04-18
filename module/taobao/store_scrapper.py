@@ -3,6 +3,7 @@ from datetime import datetime
 from time import sleep
 from io import BytesIO
 import logging
+from urllib.parse import urlparse, parse_qs
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -10,7 +11,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from PIL import Image
 import pandas as pd
 import win32clipboard
-from module.taobao.variables import TaoBaoInfoVariables
+from module.taobao.variables import TaoBaoInfoVariables, TaoBaoUrls
 
 
 def _get_product_dfs() -> pd.DataFrame:
@@ -28,6 +29,23 @@ def _get_product_dfs() -> pd.DataFrame:
     ]
     _product_dfs = pd.concat(_product_dfs, axis=0)
     return _product_dfs
+
+
+def _change_direct_url(url: str) -> str:
+    _parsed_url = urlparse(url)
+    _query_params = parse_qs(_parsed_url.query)
+
+    _item_id = (
+        _parsed_url.path.split("/")[-1].split(".")[0].replace("i", "")
+    )  # i 매개변수 추출
+    _ttid = _query_params["ttid"][0]  # ttid 매개변수 추출
+    _sid = _query_params["sid"][0]  # sid 매개변수 추출
+    _direct_url = TaoBaoUrls.TAOBAO_DIRECT_URL.format(
+        item_id=_item_id,
+        ttid=_ttid,
+        sid=_sid,
+    )
+    return _direct_url
 
 
 # 기능 구현 완료 format 맞추기 필요
@@ -77,7 +95,7 @@ class TaoBaoInfoScrapper:
         self,
     ) -> str:
         # WEB URL
-        self._get_page(TaoBaoInfoVariables.TAOBAO_URL)
+        self._get_page(TaoBaoUrls.TAOBAO_URL)
 
         # 파일 업로드를 위한 input 요소 클릭
         upload_element = self.driver.find_element(
@@ -102,6 +120,7 @@ class TaoBaoInfoScrapper:
             by=By.XPATH, value=TaoBaoInfoVariables.FIRST_ITEM
         )
         url_path = element.get_attribute("href")
+        url_path = _change_direct_url(url_path)
         return url_path
 
     def get_product_infos(self):
