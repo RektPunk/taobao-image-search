@@ -16,16 +16,29 @@ from module.naver.variables import (
 )
 
 
-def _generate_url(orig_query: str, paging_index: int) -> str:
+def _generate_url(
+    orig_query: str,
+    paging_index: int,
+    min_price: int,
+    max_price: int,
+) -> str:
     encoded_orig_query = parse.quote(orig_query)
     return NaverStoreInfoUrl.NAVER_STORE_INFO_URL.format(
+        min_price=min_price,
+        max_price=max_price,
         orig_query=encoded_orig_query,
         paging_index=paging_index,
     )
 
 
 class NaverStoreInfoScrapper:
-    def __init__(self, wait_int: int, implicitly_wait_int: int = 5):
+    def __init__(
+        self,
+        wait_int: int,
+        min_price: int,
+        max_price: int,
+        implicitly_wait_int: int = 5,
+    ):
         self.driver = webdriver.Chrome("../driver/chromedriver")
         self.wait_int: int = wait_int
         self.implicitly_wait_int: int = implicitly_wait_int
@@ -33,6 +46,8 @@ class NaverStoreInfoScrapper:
         self._now: str = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.store_infos: List = []
         self.best_product_details: List = []
+        self.min_price = min_price
+        self.max_price = max_price
 
     def _get_page(
         self,
@@ -85,7 +100,12 @@ class NaverStoreInfoScrapper:
         self.orig_query = orig_query
         _store_infos = []
         for paging_index in range(1, paging_index_limit + 1):
-            _url = _generate_url(orig_query=orig_query, paging_index=paging_index)
+            _url = _generate_url(
+                min_price=self.min_price,
+                max_price=self.max_price,
+                orig_query=orig_query,
+                paging_index=paging_index,
+            )
             self._get_page(_url)
             _store_infos_paging_index = self._get_store_infos_for_each_page()
             _store_infos = _store_infos + _store_infos_paging_index
@@ -159,11 +179,9 @@ class NaverStoreInfoScrapper:
     def get_best_products_details(
         self,
     ):
-        image_folder_path = os.path.join("images", f"{self._now}")
-        os.makedirs(image_folder_path, exist_ok=True)
         if self.best_products_df is None:
             return
-        for _row_index, best_product in self.best_products_df.iterrows():
+        for _, best_product in self.best_products_df.iterrows():
             try:
                 _smart_store_title = best_product["smart_store_title"]
                 _smart_store_link = best_product["smart_store_link"]
@@ -204,7 +222,11 @@ class NaverStoreInfoScrapper:
                         )
                     )
                 product_total_price = product_price + product_shipping_price
-
+                if (
+                    product_total_price < self.min_price
+                    or product_total_price > self.max_price
+                ):
+                    continue
                 tag_names = self.driver.find_elements(
                     by=By.CLASS_NAME, value=NaverBestProductDetailVariables.TAG_NAME
                 )
@@ -217,13 +239,6 @@ class NaverStoreInfoScrapper:
                     value=NaverBestProductDetailVariables.IMAGE_ELEMENT,
                 )
                 image_url = image_element.get_attribute("src")
-                img_data = requests.get(image_url).content
-                image_path = os.path.join(
-                    image_folder_path,
-                    f"{_row_index}_{_smart_store_title}_{product_title}.png",
-                )
-                with open(image_path, "wb") as handler:
-                    handler.write(img_data)
                 best_product_detail = {
                     "smart_store_title": _smart_store_title,
                     "smart_store_link": _smart_store_link,
@@ -232,8 +247,7 @@ class NaverStoreInfoScrapper:
                     "product_price": product_price,
                     "product_total_price": product_total_price,
                     "tag_names": tag_names,
-                    "image_path": image_path,
-                    "image_path": image_path,
+                    "image_url": image_url,
                 }
                 self.best_product_details.append(best_product_detail)
             except:
@@ -245,7 +259,12 @@ class NaverStoreInfoScrapper:
     ):
         for best_product_detail in self.best_product_details:
             _smart_store_title = best_product_detail["product_title"]
-            _url = _generate_url(orig_query=_smart_store_title, paging_index=1)
+            _url = _generate_url(
+                min_price=self.min_price,
+                max_price=self.max_price,
+                orig_query=_smart_store_title,
+                paging_index=1,
+            )
             self._get_page(_url)
             try:
                 category_names = " > ".join(
@@ -268,10 +287,36 @@ class NaverStoreInfoScrapper:
                     }
                 )
 
+    def save_images(
+        self,
+    ):
+        image_folder_path = os.path.join("images", f"{self._now}")
+        os.makedirs(image_folder_path, exist_ok=True)
+        for best_product_detail in self.best_product_details:
+            image_url = best_product_detail.get("image_url")
+            _smart_store_title = best_product_detail.get("smart_store_title")
+            product_title = best_product_detail.get("product_title")
+            img_data = requests.get(image_url).content
+            image_path = os.path.join(
+                image_folder_path,
+                f"{_smart_store_title}_{product_title}.png",
+            )
+            with open(image_path, "wb") as handler:
+                handler.write(img_data)
+            best_product_detail.update({"image_path": image_path})
+
     def save_files(
         self,
     ):
         best_product_details_df = pd.DataFrame(self.best_product_details)
+        best_product_details_df = best_product_details_df.assign(
+            image_path=[
+                f"{_idx}_{_image_path}"
+                for _idx, _image_path in zip(
+                    best_product_details_df.index, best_product_details_df["image_path"]
+                )
+            ]
+        )
         tsv_path = os.path.join("files", f"{self._now}.tsv")
         best_product_details_df.to_csv(tsv_path, sep="\t", index=False)
 
