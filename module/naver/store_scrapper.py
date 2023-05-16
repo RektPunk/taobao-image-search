@@ -309,6 +309,8 @@ class NaverStoreInfoScrapper:
         self,
     ):
         best_product_details_df = pd.DataFrame(self.best_product_details)
+        if len(best_product_details_df) == 0:
+            return
         best_product_details_df = best_product_details_df.assign(
             image_path=[
                 f"{_idx}_{_image_path}"
