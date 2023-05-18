@@ -2,6 +2,7 @@ import os
 from time import sleep
 from typing import Dict, List
 from datetime import datetime
+import re
 import requests
 from urllib import parse
 from selenium import webdriver
@@ -14,6 +15,12 @@ from module.naver.variables import (
     NaverBestProductDetailVariables,
     NaverCategoryInfoVariables,
 )
+
+
+def _sanitize_file_path(file_path: str, replace_char: str = "_") -> str:
+    invalid_chars = r'[<>:"/\\|?*\x00-\x1F\x7F]'
+    sanitized_path = re.sub(invalid_chars, replace_char, file_path)
+    return sanitized_path
 
 
 def _generate_url(
@@ -299,7 +306,7 @@ class NaverStoreInfoScrapper:
             img_data = requests.get(image_url).content
             image_path = os.path.join(
                 image_folder_path,
-                f"{_smart_store_title}_{product_title}.png",
+                _sanitize_file_path(f"{_smart_store_title}_{product_title}.png"),
             )
             with open(image_path, "wb") as handler:
                 handler.write(img_data)
