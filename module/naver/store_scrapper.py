@@ -47,26 +47,26 @@ class NaverStoreInfoScrapper:
         self,
     ) -> Dict[str, str]:
         malls = self.driver.find_elements(
-            by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_AREA
+            by=By.XPATH, value=NaverStoreInfoVariables.PRODUCT_MALL_AREA
         )
         product_infos = self.driver.find_elements(
-            by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_INFO_AREA
+            by=By.XPATH, value=NaverStoreInfoVariables.PRODUCT_INFO_AREA
         )
         smart_store_info = []
         for mall, product_info in zip(malls, product_infos):
             _mall_grade = mall.find_element(
-                by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_GRADE
+                by=By.XPATH, value=NaverStoreInfoVariables.PRODUCT_MALL_GRADE
             ).text
 
             if _mall_grade != "":
                 continue
 
             _title_link = mall.find_element(
-                by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_MALL_TITLE
+                by=By.XPATH, value=NaverStoreInfoVariables.PRODUCT_MALL_TITLE
             ).find_element(by=By.CSS_SELECTOR, value="a")
 
             _product_link = product_info.find_element(
-                by=By.XPATH, value=NaverStoreInfoVariables.BASICLIST_INFO_TITLE
+                by=By.XPATH, value=NaverStoreInfoVariables.PRODUCT_INFO_TITLE
             ).find_element(by=By.CSS_SELECTOR, value="a")
             smart_store_info.append(
                 {
@@ -253,9 +253,10 @@ class NaverStoreInfoScrapper:
                         category_name.text
                         for category_name in self.driver.find_element(
                             by=By.CLASS_NAME,
-                            value=NaverCategoryInfoVariables.BASICLIST_DEPTH,
+                            value=NaverCategoryInfoVariables.PRODUCT_DEPTH,
                         ).find_elements(
-                            by=By.CLASS_NAME, value=NaverCategoryInfoVariables.SPAN
+                            by=By.CLASS_NAME,
+                            value=NaverCategoryInfoVariables.PRODUCT_CATEGORY,
                         )
                     ]
                 )

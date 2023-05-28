@@ -3,11 +3,11 @@ class NaverStoreInfoUrl:
 
 
 class NaverStoreInfoVariables:
-    BASICLIST_MALL_AREA: str = "//div[starts-with(@class, 'basicList_mall_area')]"
-    BASICLIST_INFO_AREA: str = "//div[starts-with(@class, 'basicList_info_area')]"
-    BASICLIST_MALL_GRADE: str = "div[starts-with(@class, 'basicList_mall_grade')]"
-    BASICLIST_MALL_TITLE: str = "div[starts-with(@class, 'basicList_mall_title')]"
-    BASICLIST_INFO_TITLE: str = "div[starts-with(@class, 'basicList_title')]"
+    PRODUCT_MALL_AREA: str = "//div[starts-with(@class, 'product_mall_area')]"
+    PRODUCT_INFO_AREA: str = "//div[starts-with(@class, 'product_info_area')]"
+    PRODUCT_MALL_GRADE: str = "div[starts-with(@class, 'product_mall_grade')]"
+    PRODUCT_MALL_TITLE: str = "div[starts-with(@class, 'product_mall_title')]"
+    PRODUCT_INFO_TITLE: str = "div[starts-with(@class, 'product_title')]"
 
 
 class NaverBestProductVariables:
@@ -27,5 +27,5 @@ class NaverBestProductDetailVariables:
 
 
 class NaverCategoryInfoVariables:
-    BASICLIST_DEPTH: str = "basicList_depth__SbZWF"
-    SPAN: str = "basicList_category__cXUaZ"
+    PRODUCT_DEPTH: str = "product_depth__I4SqY"
+    PRODUCT_CATEGORY: str = "product_category__l4FWz"
