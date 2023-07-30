@@ -22,8 +22,8 @@ class NaverBestProductDetailVariables:
     PRODUCT_PRICE: str = "_1LY7DqCnwR"
     PRODUCT_SHIPPING_PRICE_ELEMENT: str = "bd_ChMMo"
     PRODUCT_SHIPPING_PRICE: str = "bd_3uare"
-    TAG_NAME: str = "_3SMi-TrYq2"
-    IMAGE_ELEMENT: str = "_2RYeHZAP_4"
+    TAG_NAME: str = "_1lnLDV9cMz"
+    IMAGE_ELEMENT: str = "bd_2DO68"
 
 
 class NaverCategoryInfoVariables:
