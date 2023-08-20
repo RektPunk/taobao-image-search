@@ -6,6 +6,9 @@ import requests
 from urllib import parse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
 import pandas as pd
 from module.naver.variables import (
     NaverStoreInfoUrl,
@@ -26,7 +29,10 @@ def _generate_url(orig_query: str, paging_index: int) -> str:
 
 class NaverStoreInfoScrapper:
     def __init__(self, wait_int: int, implicitly_wait_int: int = 5):
-        self.driver = webdriver.Chrome("../driver/chromedriver")
+        chrome_options = webdriver.ChromeOptions()
+        self.driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()), options=chrome_options
+        )
         self.wait_int: int = wait_int
         self.implicitly_wait_int: int = implicitly_wait_int
         self.driver.implicitly_wait(self.implicitly_wait_int)
