@@ -8,6 +8,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
 from PIL import Image
 import pandas as pd
 import win32clipboard
@@ -51,7 +54,10 @@ def _change_direct_url(url: str) -> str:
 # 기능 구현 완료 format 맞추기 필요
 class TaoBaoInfoScrapper:
     def __init__(self, wait_int: int, implicitly_wait_int: int = 5):
-        self.driver = webdriver.Chrome("../driver/chromedriver")
+        chrome_options = webdriver.ChromeOptions()
+        self.driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()), options=chrome_options
+        )
         self.wait_int: int = wait_int
         self.implicitly_wait_int: int = implicitly_wait_int
         self.driver.implicitly_wait(self.wait_int)
